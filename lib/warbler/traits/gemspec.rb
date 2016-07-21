@@ -31,7 +31,9 @@ module Warbler
         @spec.require_paths.each do |p|
           add_init_load_path(config.pathmaps.application.inject(p) {|pm,x| pm.pathmap(x)})
         end
+        puts 'AFASDJFSDKLSDKFSDKLFSDKFSDKLFKLSDF BEFORE COMPONENTS ADD'
         if File.directory?("components")
+          puts 'AFFSDKFASDJKLASJKLDASKLASJKLDASD HAS DIRECTORY COMPONENTS ADDING TO LOAD PATH'
           add_init_load_path(config.pathmaps.application.inject("components") {|pm,x| pm.pathmap(x)})
           add_init_load_path(config.pathmaps.application.inject("components/audit") {|pm,x| pm.pathmap(x)})
           add_init_load_path(config.pathmaps.application.inject("components/rules") {|pm,x| pm.pathmap(x)})
