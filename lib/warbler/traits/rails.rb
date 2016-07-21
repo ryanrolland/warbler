@@ -53,6 +53,13 @@ module Warbler
         config.includes += FileList["public/assets/.sprockets-manifest-*.json"].existing
         config.includes += FileList["public/assets/manifest-*.json"].existing
         config.includes += FileList["public/assets/manifest.yml"].existing
+        puts 'AFASDJFSDKLSDKFSDKLFSDKFSDKLFKLSDF BEFORE COMPONENTS ADD'
+        if File.directory?("components")
+          puts 'AFFSDKFASDJKLASJKLDASKLASJKLDASD HAS DIRECTORY COMPONENTS ADDING TO LOAD PATH'
+          add_init_load_path(config.pathmaps.application.inject("components") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/audit") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/rules") {|pm,x| pm.pathmap(x)})
+        end
       end
 
       def default_app_name
