@@ -31,6 +31,11 @@ module Warbler
         @spec.require_paths.each do |p|
           add_init_load_path(config.pathmaps.application.inject(p) {|pm,x| pm.pathmap(x)})
         end
+        if File.directory?("components")
+          add_init_load_path(config.pathmaps.application.inject("components") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/audit") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/rules") {|pm,x| pm.pathmap(x)})
+        end
       end
 
       def update_archive(jar)
