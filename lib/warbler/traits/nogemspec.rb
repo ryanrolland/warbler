@@ -27,6 +27,13 @@ module Warbler
         if File.directory?("lib")
           add_init_load_path(config.pathmaps.application.inject("lib") {|pm,x| pm.pathmap(x)})
         end
+        puts 'AFASDJFSDKLSDKFSDKLFSDKFSDKLFKLSDF BEFORE COMPONENTS ADD'
+        if File.directory?("components")
+          puts 'AFFSDKFASDJKLASJKLDASKLASJKLDASD HAS DIRECTORY COMPONENTS ADDING TO LOAD PATH'
+          add_init_load_path(config.pathmaps.application.inject("components") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/audit") {|pm,x| pm.pathmap(x)})
+          add_init_load_path(config.pathmaps.application.inject("components/rules") {|pm,x| pm.pathmap(x)})
+        end
       end
 
       def update_archive(jar)
