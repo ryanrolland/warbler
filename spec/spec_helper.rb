@@ -9,6 +9,10 @@ require 'rubygems'
 require 'rspec'
 
 $LOAD_PATH.unshift File.dirname(__FILE__) + '/../lib'
+puts 'SPEC HELPER INVOKED TRYING TO ADD COMPONENTS TO LOAD_PATH'
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../components'
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../components/audit'
+$LOAD_PATH.unshift File.dirname(__FILE__) + '/../components/rules'
 require 'warbler'
 
 raise %{Error: detected running Warbler specs in a Rails app;
