@@ -15,6 +15,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -37,6 +41,10 @@ public class JarMain implements Runnable {
     protected URLClassLoader classLoader;
 
     JarMain(String[] args) {
+      this(args, null);
+    }
+
+    JarMain(String[] args, String overrideJarPath) {
         this.args = args;
         URL mainClass = getClass().getResource(MAIN);
         try {
@@ -45,9 +53,23 @@ public class JarMain implements Runnable {
         catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
-        archive = this.path.replace("!" + MAIN, "").replace("file:", "");
+        if(overrideJarPath != null) {
+          archive = overrideJarPath;
+        } else {
+          archive = this.path.replace("!" + MAIN, "").replace("file:", "");
+        }
 
-        Runtime.getRuntime().addShutdownHook(new Thread(this));
+        //Runtime.getRuntime().addShutdownHook(new Thread(this));
+    }
+
+
+    private String getJarCreationTimestamp() throws IOException {
+
+      Path path = Paths.get(archive);
+      BasicFileAttributes attr;
+      attr = Files.readAttributes(path, BasicFileAttributes.class);
+      long millis = attr.creationTime().toMillis();
+      return Long.toString(millis);
     }
 
     protected URL[] extractArchive() throws Exception {
@@ -60,15 +82,32 @@ public class JarMain implements Runnable {
                 if ( extractPath != null ) jarNames.put(extractPath, entry);
             }
 
-            extractRoot = File.createTempFile("jruby", "extract");
-            extractRoot.delete(); extractRoot.mkdirs();
-
+            String rootTemp = System.getProperty("java.io.tmpdir");
+            String workingPath = rootTemp+File.separator+jarFile.getName().replace(".", "_")+getJarCreationTimestamp();
+            System.out.println("Using Working Path:"+workingPath);
+            extractRoot = new File(workingPath);
             final List<URL> urls = new ArrayList<URL>(jarNames.size());
-            for (Map.Entry<String, JarEntry> e : jarNames.entrySet()) {
-                URL entryURL = extractEntry(e.getValue(), e.getKey());
-                if (entryURL != null) urls.add( entryURL );
+
+            if(extractRoot.exists()) {
+              File[] files = extractRoot.listFiles();
+              for(File file : files){
+                if(file.isFile()){
+                  urls.add(file.toURI().toURL());
+                }
+              }
+            } else {
+              extractRoot.mkdirs();
+              for (Map.Entry<String, JarEntry> e : jarNames.entrySet()) {
+                  URL entryURL = extractEntry(e.getValue(), e.getKey());
+                  if (entryURL != null) urls.add( entryURL );
+              }
             }
+
+
             return urls.toArray(new URL[urls.size()]);
+        } catch(Exception e) {
+          e.printStackTrace();
+          throw e;
         }
         finally {
             jarFile.close();
@@ -77,6 +116,7 @@ public class JarMain implements Runnable {
 
     protected String getExtractEntryPath(final JarEntry entry) {
         final String name = entry.getName();
+        System.out.println(name);
         if ( name.startsWith("META-INF/lib") && name.endsWith(".jar") ) {
             return name.substring(name.lastIndexOf("/") + 1);
         }
@@ -92,7 +132,8 @@ public class JarMain implements Runnable {
         final String entryPath = entryPath(entry.getName());
         final InputStream entryStream;
         try {
-            entryStream = new URI("jar", entryPath, null).toURL().openStream();
+          URL url = new URI("jar", entryPath, null).toURL();
+          entryStream = url.openStream();
         }
         catch (IllegalArgumentException e) {
             // TODO gems '%' file name "encoding" ?!
@@ -219,7 +260,11 @@ public class JarMain implements Runnable {
     }
 
     public static void main(String[] args) {
-        doStart(new JarMain(args));
+      main(args,null);
+    }
+
+    public static void main(String[] args,String overridePath) {
+        doStart(new JarMain(args,overridePath));
     }
 
     protected static void doStart(final JarMain main) {
