@@ -186,7 +186,7 @@ public class JarMain implements Runnable {
         classLoader = new URLClassLoader(jars);
         Class scriptingContainerClass = Class.forName("org.jruby.embed.ScriptingContainer", true, classLoader);
         Object scriptingContainer = scriptingContainerClass.newInstance();
-        debug("scripting container class loader urls: " + Arrays.toString(jars));
+        System.out.println("scripting container class loader urls: " + Arrays.toString(jars));
         invokeMethod(scriptingContainer, "setArgv", (Object) args);
         invokeMethod(scriptingContainer, "setClassLoader", new Class[] { ClassLoader.class }, classLoader);
         return scriptingContainer;
@@ -297,6 +297,11 @@ public class JarMain implements Runnable {
         int exit;
         try {
             exit = main.start();
+
+            System.out.println("Script has finished - waiting for 10s - see if files have been purged at this point");
+            Thread.sleep(10000);
+            System.out.println("Done waiting.");
+
         }
         catch (Exception e) {
             Throwable t = e;
