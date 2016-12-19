@@ -123,13 +123,24 @@ public class JarMain implements Runnable {
       // get all the files from a directory
       File[] fList = directory.listFiles();
       for (File file : fList) {
-        if (file.isFile()) {
+        String fileExtension = getFileExtension(file);
+        fileExtension = fileExtension.toLowerCase();
+        if (file.isFile() && fileExtension.equals("jar")) {
           files.add(file);
         } else if (file.isDirectory()) {
           listf(file.getAbsolutePath(), files);
         }
       }
     }
+
+    private String getFileExtension(File file) {
+      String name = file.getName();
+      try {
+          return name.substring(name.lastIndexOf(".") + 1);
+      } catch (Exception e) {
+          return "";
+      }
+  }
 
     protected String getExtractEntryPath(final JarEntry entry) {
         final String name = entry.getName();
