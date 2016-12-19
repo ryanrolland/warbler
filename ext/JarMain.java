@@ -63,13 +63,13 @@ public class JarMain implements Runnable {
     }
 
 
-    private String getJarCreationTimestamp() throws IOException {
+    private String getJarLastModifiedTimestamp() throws IOException {
       System.out.println("Using archive:"+archive);
       File file = new File(archive);
       Path path = Paths.get(file.getAbsolutePath());
       BasicFileAttributes attr;
       attr = Files.readAttributes(path, BasicFileAttributes.class);
-      long millis = attr.creationTime().toMillis();
+      long millis = attr.lastModifiedTime().toMillis();
       return Long.toString(millis);
     }
 
@@ -85,13 +85,14 @@ public class JarMain implements Runnable {
 
             String rootTemp = System.getProperty("java.io.tmpdir");
             File fileToGetName = new File(archive);
-            String workingPath = rootTemp+File.separator+fileToGetName.getName().replace(".", "_")+getJarCreationTimestamp();
+            String workingPath = rootTemp+File.separator+fileToGetName.getName().replace(".", "_")+getJarLastModifiedTimestamp();
             System.out.println("Using Working Path:"+workingPath);
             extractRoot = new File(workingPath);
             final List<URL> urls = new ArrayList<URL>(jarNames.size());
 
             if(extractRoot.exists()) {
-              File[] files = extractRoot.listFiles();
+              ArrayList<File> files = new ArrayList<File>();
+              listf(extractRoot.getAbsolutePath(),files);
               for(File file : files){
                 if(file.isFile()){
                   urls.add(file.toURI().toURL());
@@ -114,6 +115,20 @@ public class JarMain implements Runnable {
         finally {
             jarFile.close();
         }
+    }
+
+    private void listf(String directoryName, ArrayList<File> files) {
+      File directory = new File(directoryName);
+
+      // get all the files from a directory
+      File[] fList = directory.listFiles();
+      for (File file : fList) {
+        if (file.isFile()) {
+          files.add(file);
+        } else if (file.isDirectory()) {
+          listf(file.getAbsolutePath(), files);
+        }
+      }
     }
 
     protected String getExtractEntryPath(final JarEntry entry) {
