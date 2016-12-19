@@ -170,7 +170,6 @@ public class JarMain implements Runnable {
         finally {
             entryStream.close();
             outStream.close();
-            file.deleteOnExit();
         }
         if (false) debug(entry.getName() + " extracted to " + file.getPath());
         return file.toURI().toURL();
@@ -297,13 +296,7 @@ public class JarMain implements Runnable {
         int exit;
         try {
             exit = main.start();
-
-            System.out.println("Script has finished - waiting for 10s - see if files have been purged at this point");
-            Thread.sleep(10000);
-            System.out.println("Done waiting.");
-
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Throwable t = e;
             while ( t.getCause() != null && t.getCause() != t ) {
                 t = t.getCause();
