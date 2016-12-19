@@ -64,9 +64,9 @@ public class JarMain implements Runnable {
 
 
     private String getJarCreationTimestamp() throws IOException {
-
       System.out.println("Using archive:"+archive);
-      Path path = Paths.get(archive);
+      File file = new File(archive);
+      Path path = Paths.get(file.getAbsolutePath());
       BasicFileAttributes attr;
       attr = Files.readAttributes(path, BasicFileAttributes.class);
       long millis = attr.creationTime().toMillis();
