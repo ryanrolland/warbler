@@ -84,7 +84,8 @@ public class JarMain implements Runnable {
             }
 
             String rootTemp = System.getProperty("java.io.tmpdir");
-            String workingPath = rootTemp+File.separator+jarFile.getName().replace(".", "_")+getJarCreationTimestamp();
+            File fileToGetName = new File(archive);
+            String workingPath = rootTemp+File.separator+fileToGetName.getName().replace(".", "_")+getJarCreationTimestamp();
             System.out.println("Using Working Path:"+workingPath);
             extractRoot = new File(workingPath);
             final List<URL> urls = new ArrayList<URL>(jarNames.size());
