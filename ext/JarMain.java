@@ -179,7 +179,7 @@ public class JarMain implements Runnable {
 
     protected int launchJRuby(final URL[] jars) throws Exception {
         final Object scriptingContainer = newScriptingContainer(jars);
-        debug("invoking " + archive + " with: " + Arrays.deepToString(args));
+        System.out.println("invoking " + archive + " with: " + Arrays.deepToString(args));
         Object outcome = invokeMethod(scriptingContainer, "runScriptlet", launchScript());
         return ( outcome instanceof Number ) ? ( (Number) outcome ).intValue() : 0;
     }
@@ -197,6 +197,13 @@ public class JarMain implements Runnable {
 
     protected int start() throws Exception {
         final URL[] jars = extractArchive();
+
+        System.out.println("JARS TO LOAD START ===============================================================================");
+        for(URL jar : jars) {
+          System.out.println(jar.toString());
+        }
+        System.out.println("JARS TO LOAD END ===============================================================================");
+
         return launchJRuby(jars);
     }
 
