@@ -274,13 +274,15 @@ public class JarMain implements Runnable {
 
     public void run() {
         // If the URLClassLoader isn't closed, on Windows, temp JARs won't be cleaned up
+        System.out.println("SHUTDOWN HOOK RUNNING");
+
         try {
             invokeMethod(classLoader, "close");
         }
         catch (NoSuchMethodException e) { } // We're not being run on Java >= 7
         catch (Exception e) { error(e); }
 
-        if ( extractRoot != null ) delete(extractRoot);
+        //if ( extractRoot != null ) delete(extractRoot);
     }
 
     public static void main(String[] args) {
