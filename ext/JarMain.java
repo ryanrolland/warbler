@@ -28,7 +28,35 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class JarMain implements Runnable {
+
+/**
+ *
+ *  rrolland - I have been manually building using:
+ *  javac -Xlint:unchecked -cp ./jruby-core-1.7.20.jar:bytelist-1.0.13.jar:jnr-posix-3.0.12.jar -d ./build ./ext/*.java
+ *  cd build
+ *  jar cvf warbler_jar.jar *
+ *  cp ./warbler_jar.jar ../lib/
+ *
+ *  The version of java I built this warbler_jar with is 1.8. Note, the maven prepare-package phase was not working for me. Failing with a:
+ *  maven-plugin:1.0.10:initialize failed: Java returned: 1
+ *
+ *  The changes introduced here are to resolve two issues:
+ *  1) Decompressing the same jar every time
+ *  2) Incomplete cleanup of temp resources, i.e. jar files were not getting deleted and introducing a 25MB hit to the file system on every run. Our
+ *  application runs a small process every 15min so that was not acceptable.
+ *
+ *  This implementation uses the timestamp of the last modified time of the executing war (or jar) to create a temp directory that is then reused until a new
+ *  version of the war (or jar) is baked which causes a new last modified timestamp and a new temp directory to be used.
+ *
+ *  I found this class very difficult to work on because a lot of the logic relies on executing within the context of the jar that you are trying to
+ *  extract the resources out of.
+ *
+ *  Testing for this change was done on a windows 2012 server running Java 1.8. I suspect this works on linux platforms but some additional testing
+ *  would be needed. OS specific call outs for lastModifiedTime and java.io.tmpdir should be confirmed to be appropriate when testing on linux.
+ *
+ *
+ */
+public class JarMain {
 
     static final String MAIN = "/" + JarMain.class.getName().replace('.', '/') + ".class";
 
@@ -58,13 +86,10 @@ public class JarMain implements Runnable {
         } else {
           archive = this.path.replace("!" + MAIN, "").replace("file:", "");
         }
-
-        //Runtime.getRuntime().addShutdownHook(new Thread(this));
     }
 
-
     private String getJarLastModifiedTimestamp() throws IOException {
-      System.out.println("Using archive:"+archive);
+      debug("Using archive:"+archive);
       File file = new File(archive);
       Path path = Paths.get(file.getAbsolutePath());
       BasicFileAttributes attr;
@@ -86,7 +111,7 @@ public class JarMain implements Runnable {
             String rootTemp = System.getProperty("java.io.tmpdir");
             File fileToGetName = new File(archive);
             String workingPath = rootTemp+File.separator+fileToGetName.getName().replace(".", "_")+getJarLastModifiedTimestamp();
-            System.out.println("Using Working Path:"+workingPath);
+            debug("Using Working Path:"+workingPath);
             extractRoot = new File(workingPath);
             final List<URL> urls = new ArrayList<URL>(jarNames.size());
 
@@ -144,7 +169,7 @@ public class JarMain implements Runnable {
 
     protected String getExtractEntryPath(final JarEntry entry) {
         final String name = entry.getName();
-        System.out.println(name);
+        debug(name);
         if ( name.startsWith("META-INF/lib") && name.endsWith(".jar") ) {
             return name.substring(name.lastIndexOf("/") + 1);
         }
@@ -196,7 +221,7 @@ public class JarMain implements Runnable {
         classLoader = new URLClassLoader(jars);
         Class scriptingContainerClass = Class.forName("org.jruby.embed.ScriptingContainer", true, classLoader);
         Object scriptingContainer = scriptingContainerClass.newInstance();
-        System.out.println("scripting container class loader urls: " + Arrays.toString(jars));
+        debug("scripting container class loader urls: " + Arrays.toString(jars));
         invokeMethod(scriptingContainer, "setArgv", (Object) args);
         invokeMethod(scriptingContainer, "setClassLoader", new Class[] { ClassLoader.class }, classLoader);
         return scriptingContainer;
@@ -204,7 +229,7 @@ public class JarMain implements Runnable {
 
     protected int launchJRuby(final URL[] jars) throws Exception {
         final Object scriptingContainer = newScriptingContainer(jars);
-        System.out.println("invoking " + archive + " with: " + Arrays.deepToString(args));
+        debug("invoking " + archive + " with: " + Arrays.deepToString(args));
         Object outcome = invokeMethod(scriptingContainer, "runScriptlet", launchScript());
         return ( outcome instanceof Number ) ? ( (Number) outcome ).intValue() : 0;
     }
@@ -223,11 +248,11 @@ public class JarMain implements Runnable {
     protected int start() throws Exception {
         final URL[] jars = extractArchive();
 
-        System.out.println("JARS TO LOAD START ===============================================================================");
+        debug("JARS TO LOAD START ===============================================================================");
         for(URL jar : jars) {
-          System.out.println(jar.toString());
+          debug(jar.toString());
         }
-        System.out.println("JARS TO LOAD END ===============================================================================");
+        debug("JARS TO LOAD END ===============================================================================");
 
         return launchJRuby(jars);
     }
@@ -237,7 +262,7 @@ public class JarMain implements Runnable {
     }
 
     protected void debug(String msg, Throwable t) {
-        if ( isDebug() ) System.out.println(msg);
+        if ( isDebug() ) debug(msg);
         if ( isDebug() && t != null ) t.printStackTrace(System.out);
     }
 
@@ -246,7 +271,7 @@ public class JarMain implements Runnable {
     }
 
     protected void warn(String msg) {
-        System.out.println("WARNING: " + msg);
+        debug("WARNING: " + msg);
     }
 
     protected static void error(Throwable t) {
@@ -280,19 +305,6 @@ public class JarMain implements Runnable {
             canonical = new File(parentDir, file.getName());
         }
         return ! canonical.getCanonicalFile().equals( canonical.getAbsoluteFile() );
-    }
-
-    public void run() {
-        // If the URLClassLoader isn't closed, on Windows, temp JARs won't be cleaned up
-        System.out.println("SHUTDOWN HOOK RUNNING");
-
-        try {
-            invokeMethod(classLoader, "close");
-        }
-        catch (NoSuchMethodException e) { } // We're not being run on Java >= 7
-        catch (Exception e) { error(e); }
-
-        //if ( extractRoot != null ) delete(extractRoot);
     }
 
     public static void main(String[] args) {

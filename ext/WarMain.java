@@ -31,8 +31,8 @@ import java.util.Set;
  * <tt>WEB-INF/webserver.properties</tt> and <tt>WEB-INF/webserver.jar</tt>.
  *
  * When WarMain starts up, it extracts the webserver jar to a temporary
- * directory, and creates a temporary work directory for the webapp. Both
- * are deleted on exit.
+ * directory, and creates a temporary work directory for the webapp. This
+ * temp directory is recycled until a new version of the war is baked.
  *
  * It then reads webserver.properties into a java.util.Properties object,
  * creates a URL classloader holding the jar, and loads and invokes the
@@ -368,11 +368,6 @@ public class WarMain extends JarMain {
         }
     }
 
-    @Override
-    public void run() {
-        super.run();
-        if ( webroot != null ) delete(webroot.getParentFile());
-    }
 
     public static void main(String[] args) {
         doStart(new WarMain(args));
